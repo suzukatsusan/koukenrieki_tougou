@@ -1,0 +1,2031 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>八王子食品 利益構造シミュレーター（上級版：チャネル構成×貢献利益率 統合分析）</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Google Fonts: Inter & Noto Sans JP -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', 'Noto Sans JP', sans-serif;
+      background-color: #f1f5f9;
+      color: #0f172a;
+    }
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 999px;
+      background: #cbd5e1;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      margin-top: -5px;
+      background-color: #1e3a8a;
+      height: 16px;
+      width: 16px;
+      border-radius: 50%;
+      border: 2px solid #ffffff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      transition: transform 0.1s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    input[type="range"].accent-emerald::-webkit-slider-thumb {
+      background-color: #059669;
+    }
+    input[type="range"].accent-indigo::-webkit-slider-thumb {
+      background-color: #4f46e5;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .toast-enter {
+      animation: slideUp 0.25s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- トップヘッダー -->
+  <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="bg-indigo-600 p-2 rounded-xl shadow-inner">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight">八王子食品 利益構造シミュレーター</h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
+              上級版：Mix × Rate 統合分析
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">売上規模・チャネル構成比率・チャネル内貢献利益率の3要素＋相乗効果シミュレーション</p>
+        </div>
+      </div>
+
+      <!-- 右上アクションボタン -->
+      <div class="flex items-center gap-2">
+        <button onclick="openBaseModal()" class="px-3 py-1.5 text-xs sm:text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition flex items-center gap-1.5">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+          基準期データを編集
+        </button>
+        <button onclick="exportCSV()" class="px-3 py-1.5 text-xs sm:text-sm font-medium bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 rounded-lg transition flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          CSV出力
+        </button>
+      </div>
+    </div>
+
+    <!-- メインナビゲーションタブ（初期表示は「📖 はじめに（学習ガイド）」） -->
+    <div class="bg-slate-800/95 border-t border-slate-700/80">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-2 pt-2">
+        <button id="mainTabGuideBtn" onclick="switchMainTab('guide')" class="px-5 py-2.5 text-sm font-bold rounded-t-xl bg-slate-100 text-slate-900 shadow-sm transition flex items-center gap-2 border-t-2 border-indigo-500">
+          <span>📖 はじめに（学習ガイド）</span>
+        </button>
+        <button id="mainTabSimBtn" onclick="switchMainTab('simulator')" class="px-5 py-2.5 text-sm font-bold rounded-t-xl bg-slate-700/60 hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center gap-2">
+          <span>📊 シミュレーター本体</span>
+          <span class="hidden sm:inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200">分析・実践</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================================================================== -->
+  <!-- タブ1：📖 はじめに（学習ガイド）画面（初期表示・視線が上から下へ流れる設計） -->
+  <!-- ===================================================================== -->
+  <div id="guideTabPanel" class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- ヒーローセクション：学びのゴール（上部CTAボタンを廃し、まずゴールと全体像に集中させる） -->
+    <section class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-6 sm:p-8 shadow-lg border border-indigo-900/60">
+      <div class="space-y-3">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 text-xs font-bold">
+          <span>🎯 八王子食品 管理会計トレーニング（全3ステップ）</span>
+        </div>
+        <h2 class="text-xl sm:text-2xl font-extrabold tracking-tight leading-snug">
+          【学びのゴール】<br class="sm:hidden">戦略的な「構成比」と「利益率」の操作で貢献利益を最大化する
+        </h2>
+        <p class="text-sm sm:text-base text-slate-200 leading-relaxed">
+          貢献利益を増減させる要素は、<strong class="text-sky-300">①売上高増減</strong>・<strong class="text-indigo-300">②チャネル間構成比率変化</strong>・<strong class="text-amber-300">③チャネル内貢献利益率変化</strong>（および相乗効果）の3つで構成されています。下のSTEP 1から順番に<strong>「例題で動きを確認 → 自分で好きな数値を入力して手計算・習熟」</strong>を繰り返すことで、戦略的に貢献利益を増やす打ち手を立案できる状態を目指します。
+        </p>
+      </div>
+
+      <!-- 3つの利益ドライバー＋相乗効果カード -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mt-6 pt-6 border-t border-white/15">
+        <div class="bg-white/10 backdrop-blur-xs rounded-xl p-4 border border-white/10">
+          <div class="text-xs font-bold text-sky-300">要素① 売上規模効果</div>
+          <div class="text-sm font-bold text-white mt-1">全体売上高の増減</div>
+          <p class="text-xs text-slate-300 mt-1.5 leading-relaxed">構成比・利益率が同じまま売上規模が拡大（縮小）する効果。</p>
+        </div>
+        <div class="bg-white/10 backdrop-blur-xs rounded-xl p-4 border border-white/10">
+          <div class="text-xs font-bold text-indigo-300">要素② チャネル構成比効果</div>
+          <div class="text-sm font-bold text-white mt-1">チャネル間ミックス変化</div>
+          <p class="text-xs text-slate-300 mt-1.5 leading-relaxed">利益率の高いチャネル（自社EC等）の構成比率を高める効果。</p>
+        </div>
+        <div class="bg-white/10 backdrop-blur-xs rounded-xl p-4 border border-white/10">
+          <div class="text-xs font-bold text-amber-300">要素③ チャネル内利益率効果</div>
+          <div class="text-sm font-bold text-white mt-1">各チャネルの採算性改善</div>
+          <p class="text-xs text-slate-300 mt-1.5 leading-relaxed">値上げ・原価低減・販促費圧縮によりチャネル自体の利益率を上げる効果。</p>
+        </div>
+        <div class="bg-white/10 backdrop-blur-xs rounded-xl p-4 border border-white/10">
+          <div class="text-xs font-bold text-purple-300">要素④ 交差（相乗）効果</div>
+          <div class="text-sm font-bold text-white mt-1">Mix × Rate の掛け算</div>
+          <p class="text-xs text-slate-300 mt-1.5 leading-relaxed">構成比を伸ばした成長チャネルの利益率も同時に改善することで生まれる相乗利益。</p>
+        </div>
+      </div>
+
+      <!-- 下への視線誘導インジケーター -->
+      <div class="mt-5 pt-3 border-t border-white/10 flex items-center justify-center text-xs text-indigo-200 font-semibold gap-1.5">
+        <span>👇 まずは下の基準数値を確認し、STEP 1 から順番に進めてください</span>
+      </div>
+    </section>
+
+    <!-- 基準期（八王子食品モデル 3チャネル）の前提確認 -->
+    <section class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">📋 八王子食品 基準期（前期実績）ベースラインデータ</h3>
+          <p class="text-xs text-slate-500 mt-0.5">この3チャネル構成（全社売上 1,000 百万円・貢献利益 255 百万円・全社貢献利益率 25.50%）を出発点とします</p>
+        </div>
+        <button onclick="openBaseModal()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline">
+          基準数値をカスタマイズする
+        </button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs sm:text-sm tabular-nums">
+          <thead>
+            <tr class="bg-slate-100 text-slate-700 border-b border-slate-200">
+              <th class="py-2.5 px-3 font-bold">販売チャネル</th>
+              <th class="py-2.5 px-3 text-right font-bold">基準売上高</th>
+              <th class="py-2.5 px-3 text-right font-bold">売上構成比</th>
+              <th class="py-2.5 px-3 text-right font-bold">チャネル内貢献利益率</th>
+              <th class="py-2.5 px-3 text-right font-bold">基準貢献利益額</th>
+              <th class="py-2.5 px-3 font-bold">チャネル特性（ヒント）</th>
+            </tr>
+          </thead>
+          <tbody id="guideBaseTableBody" class="divide-y divide-slate-200">
+            <!-- JSで動的生成 -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 3段階の学び方（STEP 1 〜 STEP 3：例題体験 → 自由数値入力で習熟） -->
+    <section class="space-y-5">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h3 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+          <span>🪜 ステップ別・実践学習プログラム（STEP 1 → STEP 2 → STEP 3）</span>
+        </h3>
+        <span class="text-xs text-slate-500">各ステップで「例題ボタン」を試したあと、自分で数値を変えて習熟しましょう</span>
+      </div>
+
+      <!-- STEP 1 -->
+      <div class="bg-white rounded-2xl p-6 shadow-sm border-l-4 border-sky-500 border-t border-r border-b border-slate-200 space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <span class="inline-block px-2.5 py-0.5 rounded-md bg-sky-100 text-sky-800 text-xs font-extrabold">STEP 1：全体売上高のみの変化</span>
+            <h4 class="text-base sm:text-lg font-bold text-slate-900 mt-1">全体売上高だけを変化させる（構成比・チャネル利益率は固定）</h4>
+          </div>
+          <button onclick="launchLearningStep('step1')" class="px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm transition shrink-0 flex items-center gap-1.5">
+            <span>▶ 例題①：全体売上 +20%（1,200百万円）で動きを見る</span>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs sm:text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+          <div class="space-y-1.5">
+            <div class="font-bold text-slate-900">📌 現象の理解</div>
+            <p>「モードB（全体売上＋構成比入力）」でチャネル構成比（50% / 30% / 20%）と利益率を基準期と同じに保ったまま、全体売上高だけを変化させます。すると<strong>全体貢献利益率（25.50%）は一切変わらず</strong>、貢献利益額だけが比例して増減します。</p>
+          </div>
+          <div class="space-y-1.5">
+            <div class="font-bold text-sky-900">🧮 手計算マスター式（①売上規模効果）</div>
+            <div class="bg-white p-2.5 rounded-lg border border-sky-200 font-mono text-xs text-slate-800">
+              売上規模効果 ＝ (計画全体売上 － 基準全体売上) × 基準全体貢献利益率
+            </div>
+            <p class="text-xs text-slate-600">例題①（+20%）：+200 百万円 × 25.50% ＝ <strong>+51.0 百万円</strong> 利益が増加します。</p>
+          </div>
+        </div>
+
+        <!-- 例題後の自習・習熟アクションボックス -->
+        <div class="bg-sky-50/70 border border-sky-200 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="text-xs text-sky-950 leading-relaxed">
+            <strong class="text-sky-800">✍️ 例題①が終わったら（自習フェーズ）：</strong>シミュレーター上の「計画期 全体売上高」欄に<strong>自分で好きな数値（例：850 百万円や 1,350 百万円）</strong>を入力し、増加（減少）する利益額を暗算・手計算してから答え合わせをしましょう。
+          </div>
+          <label class="inline-flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-sky-300 cursor-pointer shrink-0 select-none hover:bg-sky-50">
+            <input type="checkbox" id="chkStep1" onchange="saveStudyNotes()" class="w-4 h-4 text-sky-600 rounded border-slate-300">
+            <span class="text-xs font-bold text-sky-900">STEP 1 に習熟した</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="bg-white rounded-2xl p-6 shadow-sm border-l-4 border-indigo-600 border-t border-r border-b border-slate-200 space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <span class="inline-block px-2.5 py-0.5 rounded-md bg-indigo-100 text-indigo-800 text-xs font-extrabold">STEP 2：全体売上高 ＋ チャネル間構成比の変化</span>
+            <h4 class="text-base sm:text-lg font-bold text-slate-900 mt-1">全体売上とチャネル間構成比率を変化させる（2つの入力方法で比較）</h4>
+          </div>
+          <div class="flex flex-wrap gap-2 shrink-0">
+            <button onclick="launchLearningStep('step2a')" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition">
+              ▶ 例題②-A（モードB：構成比を直接変更）
+            </button>
+            <button onclick="launchLearningStep('step2b')" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl shadow-sm transition">
+              ▶ 例題②-B（モードA：チャネル別売上入力）
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs sm:text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+          <div class="space-y-2">
+            <div class="font-bold text-slate-900">📌 2段階の学び方（トップダウン → ボトムアップ）</div>
+            <ol class="list-decimal list-inside space-y-1">
+              <li><strong>最初はモードB（例題②-A）：</strong>全体売上を変化させつつ、構成比(%)を直接変えます。全体貢献利益率が変化し、「①売上規模効果」と「②チャネル構成比効果（Mix）」の2つが動くことを確認します。</li>
+              <li><strong>次にモードA（例題②-B）：</strong>チャネル別の売上高を直接増減させます。特定のチャネルだけを伸ばすと、結果として「全体売上」と「構成比」の両方が同時に動く感覚を掴みます。</li>
+            </ol>
+          </div>
+          <div class="space-y-1.5">
+            <div class="font-bold text-indigo-900">🧮 手計算マスター式（②チャネル構成比効果 Mix）＆施策思考</div>
+            <div class="bg-white p-2.5 rounded-lg border border-indigo-200 font-mono text-xs text-slate-800">
+              構成比効果 ＝ 計画全社売上 × Σ[(計画構成比i － 基準構成比i) × (基準チャネル利益率i － 基準全社利益率)]
+            </div>
+            <p class="text-xs text-slate-600"><strong>💡 考えるべき施策例：</strong>量販店（利益率20%）偏重から、利益率の高い「自社EC・通販（利益率40%）」や「業務用・外食（25%）」へ広告予算・営業人員をどうシフトするか？</p>
+          </div>
+        </div>
+
+        <!-- 例題後の自習・習熟アクションボックス -->
+        <div class="bg-indigo-50/70 border border-indigo-200 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="text-xs text-indigo-950 leading-relaxed">
+            <strong class="text-indigo-800">✍️ 例題②が終わったら（自習フェーズ）：</strong>モードBで構成比(%)を自由に書き換えたあと、モードAへ切り替えて各チャネルの売上高を自分で入力し、<strong>構成比変化の影響額を手計算で算出</strong>してみましょう。
+          </div>
+          <label class="inline-flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-indigo-300 cursor-pointer shrink-0 select-none hover:bg-indigo-50">
+            <input type="checkbox" id="chkStep2" onchange="saveStudyNotes()" class="w-4 h-4 text-indigo-600 rounded border-slate-300">
+            <span class="text-xs font-bold text-indigo-900">STEP 2 に習熟した</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="bg-white rounded-2xl p-6 shadow-sm border-l-4 border-emerald-600 border-t border-r border-b border-slate-200 space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <span class="inline-block px-2.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-xs font-extrabold">STEP 3：さらにチャネル内貢献利益率を変化させる（総合戦略）</span>
+            <h4 class="text-base sm:text-lg font-bold text-slate-900 mt-1">STEP 1・2に加えてチャネル内利益率を変化させ、相乗効果と具体的打ち手を設計する</h4>
+          </div>
+          <button onclick="launchLearningStep('step3')" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm transition shrink-0 flex items-center gap-1.5">
+            <span>▶ 例題③：全要素統合（売上＋構成比＋利益率改善）で動きを見る</span>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs sm:text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+          <div class="space-y-1.5">
+            <div class="font-bold text-slate-900">📌 3要素＋「④交差（相乗）効果」のマスター</div>
+            <p>STEP 1・2を実施した状態から、さらに各チャネル内の貢献利益率を変化させます。特に<strong>「構成比を高めた成長チャネルの利益率も同時に上げる」</strong>と、2つの変化の掛け算である<strong>「④交差（相乗）効果」</strong>がプラスに働き、利益が飛躍的に伸びます。</p>
+          </div>
+          <div class="space-y-1.5">
+            <div class="font-bold text-emerald-900">🧮 手計算マスター式（③利益率効果 Rate）＆具体的打ち手</div>
+            <div class="bg-white p-2.5 rounded-lg border border-emerald-200 font-mono text-xs text-slate-800">
+              利益率効果 ＝ 計画全社売上 × Σ[基準構成比i × (計画チャネル利益率i － 基準チャネル利益率i)]
+            </div>
+            <p class="text-xs text-slate-600"><strong>💡 具体的な打ち手（STEP 2より要素が増えるため具体策が重要）：</strong><br>
+            ・単価改定（値上げ／まとめ買いセット化）による粗利率改善<br>
+            ・PB比率アップ・歩留まり改善による原価率低減<br>
+            ・EC定期便化による獲得コスト低減や配送ロット集約による物流費率圧縮</p>
+          </div>
+        </div>
+
+        <!-- 例題後の自習・習熟アクションボックス -->
+        <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="text-xs text-emerald-950 leading-relaxed">
+            <strong class="text-emerald-800">✍️ 例題③が終わったら（自習フェーズ）：</strong>各チャネルの「単価・原価ドリルダウン」を開いて<strong>自分なりの価格改定・コスト削減の数値</strong>を入れ、影響額を計算したうえで下のワークシートに打ち手をまとめましょう。
+          </div>
+          <label class="inline-flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-emerald-300 cursor-pointer shrink-0 select-none hover:bg-emerald-50">
+            <input type="checkbox" id="chkStep3" onchange="saveStudyNotes()" class="w-4 h-4 text-emerald-600 rounded border-slate-300">
+            <span class="text-xs font-bold text-emerald-900">STEP 3 に習熟した</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- 学習・施策メモ（ワークシート機能：localStorage自動保存）＆ 自由演習への入口 -->
+    <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">📝 学習ノート＆具体的打ち手ワークシート（自動保存）</h3>
+          <p class="text-xs text-slate-500">各STEPで手計算した結果や、八王子食品の貢献利益を増やす具体的な施策を記録してください</p>
+        </div>
+        <button onclick="clearStudyNotes()" class="text-xs text-slate-500 hover:text-rose-600 underline">メモをクリア</button>
+      </div>
+
+      <textarea id="studyMemoTextarea" rows="5" oninput="saveStudyNotes()" placeholder="例：&#10;【STEP 1 手計算確認】全体売上を1,000→1,250百万円(+250)にすると、250 × 25.5% = +63.75百万円の利益増。&#10;【STEP 2 構成比変化と施策】自社EC・通販の構成比を20%→32%へ引き上げ（量販店を50%→38%へ調整）。施策としてSNS広告強化とEC限定セット商品を投入する。&#10;【STEP 3 チャネル内利益率変化と具体的打ち手】自社ECで定期購入コースを導入し販促費率を-2.0pt圧縮、業務用では大口配送集約と3%の価格改定を実施する..." class="w-full p-3.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50/40 leading-relaxed"></textarea>
+
+      <!-- 全ステップ確認後のシミュレーター自由演習ボタン（ページ最下部に配置） -->
+      <div class="pt-3 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <p class="text-xs text-slate-600">STEP 1〜3の進め方を確認したら、シミュレーター本体で自由な数値入力・戦略立案を行いましょう。</p>
+        <button onclick="switchMainTab('simulator')" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2 shrink-0">
+          <span>📊 シミュレーター本体で自由演習を始める</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+        </button>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- タブ2：📊 シミュレーター本体画面                                      -->
+  <!-- ===================================================================== -->
+  <main id="simulatorTabPanel" class="hidden flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- 学習ステップガイドバナー（例題起動時に「観察ポイント」と「次に自分で数値を変えて習熟する指示」を表示） -->
+    <div id="activeStepBanner" class="hidden bg-indigo-950 text-white rounded-xl p-4 shadow-md border border-indigo-700 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div class="space-y-1">
+        <div class="flex flex-wrap items-center gap-2">
+          <span id="activeStepBadge" class="px-2.5 py-0.5 rounded bg-amber-400 text-slate-950 text-xs font-extrabold">STEP 1 例題中</span>
+          <span id="activeStepTitle" class="text-sm font-bold">全体売上高のみ +20% 変化</span>
+        </div>
+        <p id="activeStepDesc" class="text-xs text-indigo-100 leading-relaxed"></p>
+        <p id="activeStepNextAction" class="text-xs text-amber-300 font-semibold leading-relaxed"></p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 shrink-0">
+        <button onclick="applyScenario('reset', true)" class="px-3 py-1.5 text-xs font-bold bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg transition">
+          ↺ 基準期に戻して自分で試す
+        </button>
+        <button onclick="switchMainTab('guide')" class="px-3.5 py-1.5 text-xs font-bold bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg shadow-sm transition">
+          📖 学習ガイドに戻って次のSTEPへ
+        </button>
+        <button onclick="dismissStepBanner()" class="text-indigo-300 hover:text-white p-1" title="閉じる">✕</button>
+      </div>
+    </div>
+
+    <!-- シナリオプリセット & 入力モード切替 -->
+    <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1.5">学習ステップ＆戦略シナリオ（ワンクリック適用）</span>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="applyScenario('reset')" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 transition">
+              ↺ 基準期リセット
+            </button>
+            <button onclick="applyScenario('step1')" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-800 transition">
+              STEP1：売上+20%のみ
+            </button>
+            <button onclick="applyScenario('step2_pure_mix')" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 transition">
+              STEP2：売上+10%＆EC構成比30%
+            </button>
+            <button onclick="applyScenario('step3_synergy')" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 transition">
+              STEP3：全要素統合（ミックス＋利益率改善）
+            </button>
+            <button onclick="applyScenario('inflation')" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 transition">
+              ⚠️ 原材料高騰＆値上げ対応
+            </button>
+          </div>
+        </div>
+
+        <!-- 入力モード切替（モードA vs モードB） -->
+        <div class="bg-slate-100 p-1.5 rounded-xl border border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 shrink-0">
+          <button id="modeAmountBtn" onclick="setInputMode('amount')" class="px-3.5 py-2 text-xs font-bold rounded-lg bg-white text-slate-900 shadow-sm transition text-left sm:text-center">
+            <span class="block text-[10px] text-slate-400 font-normal">モードA（ボトムアップ積み上げ）</span>
+            チャネル別 売上高を直接入力
+          </button>
+          <button id="modeMixBtn" onclick="setInputMode('mix')" class="px-3.5 py-2 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-900 transition text-left sm:text-center">
+            <span class="block text-[10px] text-indigo-500 font-normal">モードB（トップダウン配分）</span>
+            全体売上高 ＋ 構成率(%)を直接入力
+          </button>
+        </div>
+      </div>
+
+      <!-- モードB専用：全体売上高＆構成比配分コントロールパネル -->
+      <div id="totalSalesControlPanel" class="hidden mt-4 pt-4 border-t border-slate-200 space-y-3 bg-indigo-50/60 p-4 rounded-xl border border-indigo-100">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="flex items-start gap-2.5">
+            <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-600 text-white text-xs font-bold shrink-0 mt-0.5">B</span>
+            <div>
+              <div class="text-sm font-bold text-slate-900">計画期 全体売上高（全チャネル合計）</div>
+              <div class="text-xs text-slate-600 mt-0.5">
+                全体売上高を基準期と同じ値（<span id="baseTotalHint" class="font-bold text-slate-800 tabular-nums">1,000</span> 百万円）に保ったまま下の構成比(%)を変更すると、<strong class="text-indigo-700">①売上規模効果 = 0</strong> となり純粋なチャネル構成比効果（Mix）だけを検証できます。
+              </div>
+            </div>
+          </div>
+
+          <!-- 全体売上高 数値直接入力＋ステップボタン -->
+          <div class="flex flex-wrap items-center gap-2 bg-white p-2 rounded-xl border border-indigo-200 shadow-2xs shrink-0">
+            <button onclick="stepPlanTotalSales(-100)" class="px-2 py-1 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition">-100</button>
+            <button onclick="stepPlanTotalSales(-50)" class="px-2 py-1 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition">-50</button>
+            <div class="flex items-center border border-indigo-300 rounded-lg px-2.5 py-1 bg-indigo-50/30">
+              <input type="number" id="planTotalSalesInput" value="1000" step="50" min="1" onchange="updatePlanTotalSales(this.value)" oninput="updatePlanTotalSales(this.value)" class="w-24 text-right font-bold text-base text-indigo-950 bg-transparent focus:outline-none tabular-nums">
+              <span class="text-xs font-semibold text-slate-500 ml-1">百万円</span>
+            </div>
+            <button onclick="stepPlanTotalSales(50)" class="px-2 py-1 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition">+50</button>
+            <button onclick="stepPlanTotalSales(100)" class="px-2 py-1 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition">+100</button>
+            <button onclick="matchBaseTotalSales()" title="基準期の全体売上高と一致させる" class="px-2.5 py-1 text-xs font-semibold bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded-lg transition ml-1">
+              基準と同額にする
+            </button>
+          </div>
+        </div>
+
+        <!-- 構成比配分アシスタントバー -->
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-indigo-200/70">
+          <div class="flex flex-wrap items-center gap-2">
+            <span id="mixModeStatusBadge" class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 tabular-nums">
+              構成比合計: 100.0%（OK）
+            </span>
+            <button id="normalizeMixBtn" onclick="normalizeMixTo100()" class="px-3 py-1 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition flex items-center gap-1">
+              <span>⚖️ 現在の比率のまま合計100%に正規化</span>
+            </button>
+          </div>
+
+          <label class="inline-flex items-center gap-2 cursor-pointer bg-white px-3 py-1.5 rounded-lg border border-slate-200 select-none">
+            <input type="checkbox" id="autoBalanceMixToggle" onchange="toggleAutoBalanceMix(this.checked)" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+            <span class="text-xs font-semibold text-slate-700">他チャネルへ自動比例配分（常に100%維持）</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- KPIサマリーカード（4枚） -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- 1. 計画売上高 -->
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+        <div class="text-xs font-semibold text-slate-500 flex items-center justify-between">
+          <span>計画期 売上高</span>
+          <span class="text-[11px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 tabular-nums">基準: <span id="kpiBaseSales">1,000</span></span>
+        </div>
+        <div class="mt-2 flex items-baseline gap-1.5">
+          <span id="kpiPlanSales" class="text-2xl font-extrabold text-slate-900 tabular-nums">1,000.0</span>
+          <span class="text-xs text-slate-500">百万円</span>
+        </div>
+        <div id="kpiSalesDiff" class="mt-1.5 text-xs font-semibold tabular-nums text-slate-500">
+          ±0.0 百万円 (0.0%)
+        </div>
+      </div>
+
+      <!-- 2. 加重平均貢献利益率 -->
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+        <div class="text-xs font-semibold text-slate-500 flex items-center justify-between">
+          <span>加重平均 貢献利益率</span>
+          <span class="text-[11px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 tabular-nums">基準: <span id="kpiBaseMarginRate">25.50%</span></span>
+        </div>
+        <div class="mt-2 flex items-baseline gap-1.5">
+          <span id="kpiPlanMarginRate" class="text-2xl font-extrabold text-indigo-700 tabular-nums">25.50</span>
+          <span class="text-xs text-slate-500">%</span>
+        </div>
+        <div id="kpiMarginRateDiff" class="mt-1.5 text-xs font-semibold tabular-nums text-slate-500">
+          ±0.00 pt
+        </div>
+      </div>
+
+      <!-- 3. 貢献利益額 -->
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 ring-1 ring-indigo-500/20">
+        <div class="text-xs font-semibold text-indigo-700 flex items-center justify-between">
+          <span>計画期 貢献利益額</span>
+          <span class="text-[11px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 tabular-nums">基準: <span id="kpiBaseProfit">255.0</span></span>
+        </div>
+        <div class="mt-2 flex items-baseline gap-1.5">
+          <span id="kpiPlanProfit" class="text-2xl font-extrabold text-slate-900 tabular-nums">255.0</span>
+          <span class="text-xs text-slate-500">百万円</span>
+        </div>
+        <div id="kpiProfitDiff" class="mt-1.5 text-xs font-bold tabular-nums text-slate-500">
+          ±0.0 百万円 (0.0%)
+        </div>
+      </div>
+
+      <!-- 4. 貢献利益 増減要因の主因サマリー -->
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+        <div class="text-xs font-semibold text-slate-500 flex items-center justify-between">
+          <span>利益変動の最大ドライバー</span>
+          <span class="text-[11px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">4要素分解</span>
+        </div>
+        <div id="kpiTopDriverName" class="mt-2 text-lg font-extrabold text-slate-800 truncate">
+          基準期と同一
+        </div>
+        <div id="kpiTopDriverVal" class="mt-1.5 text-xs font-semibold tabular-nums text-slate-500">
+          各パラメータを操作して検証
+        </div>
+      </div>
+    </section>
+
+    <!-- メインワークスペース：左（チャネル別シミュレーター操作） / 右（高度要因分解チャート＆明細） -->
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+
+      <!-- 左カラム：チャネル別シミュレーション操作パネル (5/12) -->
+      <div class="xl:col-span-5 space-y-4">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h2 class="text-base font-bold text-slate-900">チャネル別 計画パラメータ設定</h2>
+              <p class="text-xs text-slate-500">売上構成とチャネル内貢献利益率（単価・原価・販促費）を調整</p>
+            </div>
+            <span id="mixTotalBadge" class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 tabular-nums">
+              構成比合計: 100.0%
+            </span>
+          </div>
+
+          <!-- チャネルカードリスト -->
+          <div id="channelCardsContainer" class="space-y-3.5">
+            <!-- JSで動的生成 -->
+          </div>
+        </div>
+
+        <!-- 管理会計 数式リファレンス -->
+        <details class="bg-slate-800 text-slate-200 rounded-xl p-4 shadow-sm text-xs" open>
+          <summary class="font-bold cursor-pointer text-slate-100 flex items-center justify-between">
+            <span>📐 管理会計：4要素厳密差異分解の計算式リファレンス</span>
+            <span class="text-slate-400 text-[11px]">開閉</span>
+          </summary>
+          <div class="mt-3 space-y-2 text-slate-300 leading-relaxed border-t border-slate-700 pt-3">
+            <p>全体の貢献利益増減（<code class="text-indigo-300">ΔM = M₁ - M₀</code>）は、以下の4要素に1円の誤差なく完全分解されます：</p>
+            <ul class="list-disc pl-4 space-y-1.5">
+              <li><strong class="text-white">① 売上規模効果 (Volume):</strong> <code class="text-emerald-300">(S₁ - S₀) × m̄₀</code><br><span class="text-slate-400">全体売上高の増減に基準期の全社貢献利益率を乗じた純粋な規模効果。</span></li>
+              <li><strong class="text-white">② チャネル構成比効果 (Mix):</strong> <code class="text-indigo-300">S₁ × Σ(wᵢ₁ - wᵢ₀) × (mᵢ₀ - m̄₀)</code><br><span class="text-slate-400">全社平均より利益率の高いチャネルへ構成比がシフトしたことによる構造改善効果。</span></li>
+              <li><strong class="text-white">③ チャネル内利益率効果 (Rate):</strong> <code class="text-amber-300">S₁ × Σwᵢ₀ × (mᵢ₁ - mᵢ₀)</code><br><span class="text-slate-400">構成比が基準期と同じと仮定した場合の、各チャネル内での値上げ・原価低減効果。</span></li>
+              <li><strong class="text-white">④ 交差・相乗効果 (Interaction):</strong> <code class="text-purple-300">S₁ × Σ(wᵢ₁ - wᵢ₀) × (mᵢ₁ - mᵢ₀)</code><br><span class="text-slate-400">「構成比を高めたチャネル」の「利益率も同時に改善した」場合に生まれる相乗効果。</span></li>
+            </ul>
+          </div>
+        </details>
+      </div>
+
+      <!-- 右カラム：分析ダッシュボード・チャート・詳細テーブル (7/12) -->
+      <div class="xl:col-span-7 space-y-6">
+
+        <!-- 貢献利益額 ウォーターフォール差異分析チャート -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div>
+              <h2 class="text-base font-bold text-slate-900">貢献利益 増減要因ブリッジ（ウォーターフォール分析）</h2>
+              <p class="text-xs text-slate-500">基準期から計画期への貢献利益変化を「①規模・②構成比(Mix)・③利益率(Rate)・④交差」に完全分解</p>
+            </div>
+            <div class="flex items-center gap-3 text-xs">
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block"></span>増益要因</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-rose-500 inline-block"></span>減益要因</span>
+            </div>
+          </div>
+
+          <!-- 4要素サマリーピル -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
+            <div class="bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+              <div class="text-[11px] font-semibold text-slate-500">① 売上規模効果</div>
+              <div id="bridgeVolumeVal" class="text-sm font-bold tabular-nums mt-0.5 text-slate-800">±0.0 百万円</div>
+            </div>
+            <div class="bg-indigo-50/70 border border-indigo-200 rounded-lg p-2.5">
+              <div class="text-[11px] font-semibold text-indigo-700">② 構成比効果 (Mix)</div>
+              <div id="bridgeMixVal" class="text-sm font-bold tabular-nums mt-0.5 text-indigo-900">±0.0 百万円</div>
+            </div>
+            <div class="bg-amber-50/70 border border-amber-200 rounded-lg p-2.5">
+              <div class="text-[11px] font-semibold text-amber-800">③ チャネル内利益率 (Rate)</div>
+              <div id="bridgeRateVal" class="text-sm font-bold tabular-nums mt-0.5 text-amber-900">±0.0 百万円</div>
+            </div>
+            <div class="bg-purple-50/70 border border-purple-200 rounded-lg p-2.5">
+              <div class="text-[11px] font-semibold text-purple-800">④ 交差・相乗効果</div>
+              <div id="bridgeCrossVal" class="text-sm font-bold tabular-nums mt-0.5 text-purple-900">±0.0 百万円</div>
+            </div>
+          </div>
+
+          <!-- ウォーターフォールチャートキャンバス -->
+          <div class="relative h-64 w-full">
+            <canvas id="waterfallChart"></canvas>
+          </div>
+        </div>
+
+        <!-- 加重平均貢献利益率（%）の変動要因分解 & チャネル別貢献利益比較 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- 貢献利益率（%）要因分解 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">加重平均貢献利益率（%）の変動分解</h3>
+              <p class="text-xs text-slate-500 mt-0.5">全社利益率の変化（pt）の内訳</p>
+
+              <div class="mt-4 space-y-3">
+                <div>
+                  <div class="flex justify-between text-xs font-semibold mb-1">
+                    <span class="text-indigo-700">チャネル構成比変化 (Mix効果)</span>
+                    <span id="rateBridgeMix" class="tabular-nums">0.00 pt</span>
+                  </div>
+                  <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden flex">
+                    <div id="barMixPct" class="bg-indigo-600 h-2 transition-all duration-300" style="width: 0%"></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex justify-between text-xs font-semibold mb-1">
+                    <span class="text-amber-700">チャネル内利益率変化 (Rate効果)</span>
+                    <span id="rateBridgeRate" class="tabular-nums">0.00 pt</span>
+                  </div>
+                  <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden flex">
+                    <div id="barRatePct" class="bg-amber-500 h-2 transition-all duration-300" style="width: 0%"></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex justify-between text-xs font-semibold mb-1">
+                    <span class="text-purple-700">交差・相乗効果 (Interaction)</span>
+                    <span id="rateBridgeCross" class="tabular-nums">0.00 pt</span>
+                  </div>
+                  <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden flex">
+                    <div id="barCrossPct" class="bg-purple-600 h-2 transition-all duration-300" style="width: 0%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-5 pt-3 border-t border-slate-200 flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-600">全社貢献利益率 合計変化</span>
+              <span id="rateBridgeTotal" class="text-base font-bold tabular-nums text-slate-900">0.00 pt</span>
+            </div>
+          </div>
+
+          <!-- チャネル別 貢献利益額比較チャート -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+            <h3 class="text-sm font-bold text-slate-900">チャネル別 貢献利益比較（基準 vs 計画）</h3>
+            <p class="text-xs text-slate-500 mt-0.5">各チャネルが生み出す貢献利益額（百万円）</p>
+            <div class="relative h-48 w-full mt-3">
+              <canvas id="channelBarChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- 自動経営インサイト＆戦略評価ボックス -->
+        <div class="bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-xl shadow-sm p-5 border border-slate-800">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="px-2 py-0.5 text-[11px] font-bold bg-indigo-500 text-white rounded">AI管理会計インサイト</span>
+            <h3 class="text-sm font-bold text-slate-100">シミュレーション結果の戦略的評価</h3>
+          </div>
+          <div id="aiInsightContent" class="text-xs sm:text-sm text-slate-200 leading-relaxed space-y-2">
+            <!-- JSで動的生成 -->
+          </div>
+        </div>
+
+        <!-- チャネル別 詳細差異分解マトリクス表 -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">チャネル別 貢献利益・差異分解マトリクス</h3>
+              <p class="text-xs text-slate-500">単位：百万円（構成比・利益率は%）</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs tabular-nums">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
+                  <th class="py-2.5 px-3">チャネル名</th>
+                  <th class="py-2.5 px-3 text-right">基準売上<br>(構成比)</th>
+                  <th class="py-2.5 px-3 text-right">計画売上<br>(構成比)</th>
+                  <th class="py-2.5 px-3 text-right">基準→計画<br>利益率</th>
+                  <th class="py-2.5 px-3 text-right">貢献利益<br>増減額</th>
+                  <th class="py-2.5 px-3 text-right text-indigo-700">構成比効果<br>(Mix)</th>
+                  <th class="py-2.5 px-3 text-right text-amber-700">利益率効果<br>(Rate)</th>
+                  <th class="py-2.5 px-3 text-right text-purple-700">交差効果<br>(Cross)</th>
+                </tr>
+              </thead>
+              <tbody id="detailTableBody" class="divide-y divide-slate-200">
+                <!-- JSで動的生成 -->
+              </tbody>
+              <tfoot id="detailTableFoot" class="bg-slate-100 font-bold text-slate-900 border-t-2 border-slate-300">
+                <!-- JSで動的生成 -->
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- 基準期（前期）データ編集モーダル -->
+  <div id="baseSettingsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full overflow-hidden border border-slate-200">
+      <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-bold">基準期（前期実績）ベースライン設定</h3>
+          <p class="text-xs text-slate-400">八王子食品の基準となるチャネル別売上・貢献利益率を編集できます</p>
+        </div>
+        <button onclick="closeBaseModal()" class="text-slate-400 hover:text-white p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-600">チャネル別 基準データ</span>
+            <button onclick="addChannelRowInModal()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+              ＋ チャネルを追加
+            </button>
+          </div>
+          <div id="modalChannelsList" class="space-y-2">
+            <!-- JSで動的生成 -->
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
+        <button onclick="resetDefaultBaseData()" class="px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 underline">
+          初期データ（八王子食品モデル）に戻す
+        </button>
+        <div class="flex gap-2">
+          <button onclick="closeBaseModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-lg transition">キャンセル</button>
+          <button onclick="saveBaseSettings()" class="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition">設定を保存して反映</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- トースト通知 -->
+  <div id="toastNotification" class="fixed bottom-5 right-5 bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-lg border border-slate-700 hidden z-50 flex items-center gap-2">
+    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+    <span id="toastMessage">メッセージ</span>
+  </div>
+
+  <script>
+    // ==========================================
+    // 2. 状態管理（八王子食品モデル 3チャネル初期データ）
+    // ==========================================
+    const DEFAULT_CHANNELS = [
+      {
+        id: 'ch_super',
+        name: '量販店・スーパー',
+        hint: '売上規模は最大（50%）だが、特売・リベート等により貢献利益率は低め（20%）',
+        color: '#3b82f6',
+        baseSales: 500,
+        baseMarginRate: 20.0,
+        planSales: 500,
+        planMix: 50.0,
+        planMarginRate: 20.0,
+        priceChangePct: 0.0,
+        materialDiffPt: 0.0,
+        promoDiffPt: 0.0,
+        showDrivers: false
+      },
+      {
+        id: 'ch_b2b',
+        name: '業務用・外食',
+        hint: '大口・安定発注が特徴（構成比30%）。中程度の利益率（25%）で基盤を支える',
+        color: '#10b981',
+        baseSales: 300,
+        baseMarginRate: 25.0,
+        planSales: 300,
+        planMix: 30.0,
+        planMarginRate: 25.0,
+        priceChangePct: 0.0,
+        materialDiffPt: 0.0,
+        promoDiffPt: 0.0,
+        showDrivers: false
+      },
+      {
+        id: 'ch_ec',
+        name: '自社EC・通販',
+        hint: '中間マージンがなく貢献利益率が最も高い（40%）成長ドライバー',
+        color: '#6366f1',
+        baseSales: 200,
+        baseMarginRate: 40.0,
+        planSales: 200,
+        planMix: 20.0,
+        planMarginRate: 40.0,
+        priceChangePct: 0.0,
+        materialDiffPt: 0.0,
+        promoDiffPt: 0.0,
+        showDrivers: false
+      }
+    ];
+
+    let state = {
+      activeTab: 'guide',       // 'guide' (初期表示) | 'simulator'
+      inputMode: 'amount',      // 'amount' (モードA) | 'mix' (モードB)
+      autoBalanceMix: false,
+      planTotalSales: 1000,
+      channels: JSON.parse(JSON.stringify(DEFAULT_CHANNELS))
+    };
+
+    let waterfallChartInstance = null;
+    let channelBarChartInstance = null;
+
+    // ==========================================
+    // 3. 初期化処理
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', () => {
+      loadStudyNotes();
+      renderGuideBaseTable();
+      initCharts();
+      renderChannelCards();
+      recalculateAndRender();
+    });
+
+    // ==========================================
+    // 4. メインタブ切替（📖 はじめに ⇔ 📊 シミュレーター本体）
+    // ==========================================
+    function switchMainTab(tabName) {
+      state.activeTab = tabName;
+      const guideBtn = document.getElementById('mainTabGuideBtn');
+      const simBtn = document.getElementById('mainTabSimBtn');
+      const guidePanel = document.getElementById('guideTabPanel');
+      const simPanel = document.getElementById('simulatorTabPanel');
+
+      if (tabName === 'guide') {
+        guideBtn.className = 'px-5 py-2.5 text-sm font-bold rounded-t-xl bg-slate-100 text-slate-900 shadow-sm transition flex items-center gap-2 border-t-2 border-indigo-500';
+        simBtn.className = 'px-5 py-2.5 text-sm font-bold rounded-t-xl bg-slate-700/60 hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center gap-2';
+        guidePanel.classList.remove('hidden');
+        simPanel.classList.add('hidden');
+        renderGuideBaseTable();
+      } else {
+        simBtn.className = 'px-5 py-2.5 text-sm font-bold rounded-t-xl bg-slate-100 text-slate-900 shadow-sm transition flex items-center gap-2 border-t-2 border-indigo-500';
+        guideBtn.className = 'px-5 py-2.5 text-sm font-bold rounded-t-xl bg-slate-700/60 hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center gap-2';
+        guidePanel.classList.add('hidden');
+        simPanel.classList.remove('hidden');
+        recalculateAndRender();
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function renderGuideBaseTable() {
+      const tbody = document.getElementById('guideBaseTableBody');
+      if (!tbody) return;
+      const totalSales = state.channels.reduce((s, c) => s + c.baseSales, 0);
+      const totalProfit = state.channels.reduce((s, c) => s + (c.baseSales * c.baseMarginRate / 100), 0);
+      const avgMargin = totalSales > 0 ? (totalProfit / totalSales) * 100 : 0;
+
+      const rowsHtml = state.channels.map(c => {
+        const mix = totalSales > 0 ? (c.baseSales / totalSales) * 100 : 0;
+        const profit = c.baseSales * c.baseMarginRate / 100;
+        return `
+          <tr class="hover:bg-slate-50">
+            <td class="py-2.5 px-3 font-bold text-slate-900 flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full inline-block" style="background-color:${c.color}"></span>
+              ${c.name}
+            </td>
+            <td class="py-2.5 px-3 text-right font-semibold text-slate-800">${fmtNum(c.baseSales, 0)} 百万円</td>
+            <td class="py-2.5 px-3 text-right text-slate-600">${fmtNum(mix, 1)}%</td>
+            <td class="py-2.5 px-3 text-right font-semibold text-indigo-700">${fmtNum(c.baseMarginRate, 1)}%</td>
+            <td class="py-2.5 px-3 text-right font-bold text-slate-900">${fmtNum(profit, 1)} 百万円</td>
+            <td class="py-2.5 px-3 text-xs text-slate-500">${c.hint || '—'}</td>
+          </tr>
+        `;
+      }).join('');
+
+      tbody.innerHTML = rowsHtml + `
+        <tr class="bg-slate-100 font-extrabold text-slate-900 border-t-2 border-slate-300">
+          <td class="py-2.5 px-3">全社合計（基準期）</td>
+          <td class="py-2.5 px-3 text-right">${fmtNum(totalSales, 0)} 百万円</td>
+          <td class="py-2.5 px-3 text-right">100.0%</td>
+          <td class="py-2.5 px-3 text-right text-indigo-800">${fmtNum(avgMargin, 2)}%</td>
+          <td class="py-2.5 px-3 text-right">${fmtNum(totalProfit, 1)} 百万円</td>
+          <td class="py-2.5 px-3 text-xs font-normal text-slate-600">全社加重平均貢献利益率</td>
+    // 学習ガイドのSTEPボタンからシミュレーターを起動（例題確認 → 自由数値入力へ誘導）
+    function launchLearningStep(stepKey) {
+      const baseTotal = state.channels.reduce((s, c) => s + c.baseSales, 0);
+      const banner = document.getElementById('activeStepBanner');
+      const badge = document.getElementById('activeStepBadge');
+      const title = document.getElementById('activeStepTitle');
+      const desc = document.getElementById('activeStepDesc');
+      const nextAct = document.getElementById('activeStepNextAction');
+
+      // 一旦基準値にリセット
+      state.channels.forEach(c => {
+        c.planSales = c.baseSales;
+        c.planMix = baseTotal > 0 ? parseFloat(((c.baseSales / baseTotal) * 100).toFixed(1)) : 0;
+        c.planMarginRate = c.baseMarginRate;
+        c.priceChangePct = 0;
+        c.materialDiffPt = 0;
+        c.promoDiffPt = 0;
+        c.showDrivers = false;
+      });
+      state.planTotalSales = baseTotal;
+
+      if (stepKey === 'step1') {
+        // STEP 1: モードBで全体売上を+20%（1,200百万円）にし、構成比・利益率は基準のまま
+        state.planTotalSales = Math.round(baseTotal * 1.2);
+        state.channels.forEach(c => {
+          c.planSales = (state.planTotalSales * c.planMix) / 100;
+        });
+        setInputMode('mix');
+        badge.textContent = 'STEP 1 例題①';
+        title.textContent = '全体売上高のみ +20% 変化（構成比・利益率は固定）';
+        desc.textContent = `全体売上が ${fmtNum(baseTotal, 0)} → ${fmtNum(state.planTotalSales, 0)} 百万円に増えましたが、加重平均貢献利益率（25.50%）は変わらず「①売上規模効果（+200 × 25.5% = +51.0百万円）」のみが発生しています。`;
+        nextAct.textContent = '👉 例題の動きを確認したら、上の「計画期 全体売上高」に自分で好きな数値（例：850 や 1,400）を入れて計算を習熟してください！';
+      } else if (stepKey === 'step2a') {
+        // STEP 2-A: モードBで全体売上+10% かつ 自社ECの構成比を20%→30%へ引き上げ
+        state.planTotalSales = Math.round(baseTotal * 1.1);
+        if (state.channels.length >= 3) {
+          const mixes = [40.0, 30.0, 30.0];
+          state.channels.forEach((c, i) => {
+            if (mixes[i] !== undefined) c.planMix = mixes[i];
+            c.planSales = (state.planTotalSales * c.planMix) / 100;
+          });
+        }
+        setInputMode('mix');
+        badge.textContent = 'STEP 2-A 例題②（モードB）';
+        title.textContent = '全体売上 +10% ＆ 自社EC構成比を 20% → 30% へ直接変更';
+        desc.textContent = '全体売上と構成比(%)の両方を変化させたため、全社貢献利益率が 25.50% → 27.50% へ上昇し、「①売上規模効果」と「②構成比効果(Mix)」の2つが発生しています。';
+        nextAct.textContent = '👉 構成比(%)を自由に変えてみたあと、右上の「モードA（チャネル別売上高を直接入力）」に切り替えて試しましょう！';
+      } else if (stepKey === 'step2b') {
+        // STEP 2-B: モードAで自社EC・通販の売上高を直接引き上げ
+        if (state.channels.length >= 3) {
+          state.channels[2].planSales = Math.round(state.channels[2].baseSales * 1.75); // 自社ECを200→350へ
+        }
+        syncMixFromSales();
+        setInputMode('amount');
+        badge.textContent = 'STEP 2-B 例題②（モードA）';
+        title.textContent = 'チャネル別売上高を直接入力（自社EC売上を 200 → 350 百万円へ拡大）';
+        desc.textContent = '自社EC・通販の売上高だけを伸ばすと、結果として「全体売上」と「全社構成比」の両方が同時に変化します。';
+        nextAct.textContent = '👉 各チャネルの売上スライダーや数値を自由に動かし、手計算で影響額を算出して習熟してください！';
+      } else if (stepKey === 'step3') {
+        // STEP 3: ミックス改善 ＋ チャネル内利益率改善（ドリルダウン展開）
+        if (state.channels.length >= 3) {
+          state.channels[0].planSales = Math.round(state.channels[0].baseSales * 0.90); // 量販店 450
+          state.channels[1].planSales = Math.round(state.channels[1].baseSales * 1.10); // 業務用 330
+          state.channels[2].planSales = Math.round(state.channels[2].baseSales * 1.60); // 自社EC 320
+
+          // 単価改定や販促費見直しによる利益率向上
+          state.channels[1].showDrivers = true;
+          state.channels[1].priceChangePct = 2.0;
+          recalcChannelMarginFromDrivers(state.channels[1]);
+
+          state.channels[2].showDrivers = true;
+          state.channels[2].priceChangePct = 4.0;
+          state.channels[2].promoDiffPt = -1.5;
+          recalcChannelMarginFromDrivers(state.channels[2]);
+        }
+        syncMixFromSales();
+        setInputMode('amount');
+        badge.textContent = 'STEP 3 例題③（全要素統合）';
+        title.textContent = '売上規模 ＋ 構成比(Mix) ＋ チャネル内利益率(Rate) ＋ 相乗効果';
+        desc.textContent = '高収益な自社EC・業務用の構成比を伸ばしつつ、単価改定・販促費見直しで利益率も改善しました。ウォーターフォール図の「④交差・相乗効果」にも注目してください。';
+        nextAct.textContent = '👉 自分なりの単価改定・コスト削減数値を入力して影響額を計算し、学習ガイドのワークシートに具体的打ち手をまとめましょう！';
+      }
+
+      banner.classList.remove('hidden');
+      switchMainTab('simulator');
+      renderChannelCards();
+      recalculateAndRender();
+    }
+
+    function dismissStepBanner() {
+      document.getElementById('activeStepBanner').classList.add('hidden');
+    }
+
+    // 学習ノート保存・読込（localStorage）
+    function saveStudyNotes() {
+      try {
+        const data = {
+          chk1: document.getElementById('chkStep1').checked,
+          chk2: document.getElementById('chkStep2').checked,
+          chk3: document.getElementById('chkStep3').checked,
+          memo: document.getElementById('studyMemoTextarea').value
+        };
+        localStorage.setItem('hachioji_study_notes_v1', JSON.stringify(data));
+      } catch (e) {}
+    }
+
+    function loadStudyNotes() {
+      try {
+        const raw = localStorage.getItem('hachioji_study_notes_v1');
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        document.getElementById('chkStep1').checked = !!data.chk1;
+        document.getElementById('chkStep2').checked = !!data.chk2;
+        document.getElementById('chkStep3').checked = !!data.chk3;
+        document.getElementById('studyMemoTextarea').value = data.memo || '';
+      } catch (e) {}
+    }
+
+    function clearStudyNotes() {
+      document.getElementById('chkStep1').checked = false;
+      document.getElementById('chkStep2').checked = false;
+      document.getElementById('chkStep3').checked = false;
+      document.getElementById('studyMemoTextarea').value = '';
+      saveStudyNotes();
+      showToast('学習メモをクリアしました');
+    }
+
+    // ==========================================
+    // 5. 入力モード切替 & シナリオ適用
+    // ==========================================
+    function setInputMode(mode) {
+      state.inputMode = mode;
+      const amountBtn = document.getElementById('modeAmountBtn');
+      const mixBtn = document.getElementById('modeMixBtn');
+      const totalPanel = document.getElementById('totalSalesControlPanel');
+
+      if (mode === 'amount') {
+        amountBtn.className = 'px-3.5 py-2 text-xs font-bold rounded-lg bg-white text-slate-900 shadow-sm transition text-left sm:text-center';
+        mixBtn.className = 'px-3.5 py-2 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-900 transition text-left sm:text-center';
+        totalPanel.classList.add('hidden');
+      } else {
+        mixBtn.className = 'px-3.5 py-2 text-xs font-bold rounded-lg bg-white text-indigo-700 shadow-sm transition text-left sm:text-center';
+        amountBtn.className = 'px-3.5 py-2 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-900 transition text-left sm:text-center';
+        totalPanel.classList.remove('hidden');
+
+        const currentTotal = state.channels.reduce((acc, c) => acc + c.planSales, 0);
+        const baseTotal = state.channels.reduce((acc, c) => acc + c.baseSales, 0);
+        state.planTotalSales = currentTotal > 0 ? currentTotal : baseTotal;
+        document.getElementById('planTotalSalesInput').value = Math.round(state.planTotalSales);
+        document.getElementById('baseTotalHint').textContent = fmtNum(baseTotal, 0);
+
+        state.channels.forEach(c => {
+          c.planMix = currentTotal > 0
+            ? parseFloat(((c.planSales / currentTotal) * 100).toFixed(1))
+            : parseFloat((100 / state.channels.length).toFixed(1));
+        });
+      }
+      renderChannelCards();
+      recalculateAndRender();
+    }
+
+    function toggleAutoBalanceMix(checked) {
+      state.autoBalanceMix = checked;
+      if (checked) {
+        normalizeMixTo100(true);
+        showToast('自動比例配分ON：編集したチャネル以外へ残りを自動配分します');
+      } else {
+        showToast('自由手入力モード：各チャネルの構成比を順番に入力できます');
+      }
+      renderChannelCards();
+    }
+
+    function updatePlanTotalSales(val) {
+      const num = Math.max(0, parseFloat(val) || 0);
+      state.planTotalSales = num;
+      state.channels.forEach(c => {
+        c.planSales = (state.planTotalSales * c.planMix) / 100;
+      });
+      renderChannelCards();
+      recalculateAndRender();
+    }
+
+    function stepPlanTotalSales(delta) {
+      const next = Math.max(0, state.planTotalSales + delta);
+      document.getElementById('planTotalSalesInput').value = next;
+      updatePlanTotalSales(next);
+    }
+
+    function matchBaseTotalSales() {
+      const baseTotal = state.channels.reduce((s, c) => s + c.baseSales, 0);
+      document.getElementById('planTotalSalesInput').value = baseTotal;
+      updatePlanTotalSales(baseTotal);
+      showToast(`計画全体売上高を基準期と同額（${fmtNum(baseTotal, 0)} 百万円）に設定しました`);
+    }
+
+    function normalizeMixTo100(silent = false) {
+      const currentSum = state.channels.reduce((s, c) => s + c.planMix, 0);
+      if (currentSum <= 0) {
+        const eq = 100 / state.channels.length;
+        state.channels.forEach(c => c.planMix = parseFloat(eq.toFixed(1)));
+      } else {
+        let running = 0;
+        state.channels.forEach((c, idx) => {
+          if (idx === state.channels.length - 1) {
+            c.planMix = Math.max(0, parseFloat((100 - running).toFixed(1)));
+          } else {
+            const scaled = parseFloat(((c.planMix / currentSum) * 100).toFixed(1));
+            c.planMix = scaled;
+            running += scaled;
+          }
+        });
+      }
+      state.channels.forEach(c => {
+        c.planSales = (state.planTotalSales * c.planMix) / 100;
+      });
+      renderChannelCards();
+      recalculateAndRender();
+      if (!silent) showToast('構成比の合計を 100.0% に正規化しました');
+    }
+
+    function absorbRemainderToChannel(idx) {
+      const currentSum = state.channels.reduce((s, c) => s + c.planMix, 0);
+      const remainder = 100 - currentSum;
+      const nextVal = Math.max(0, Math.min(100, parseFloat((state.channels[idx].planMix + remainder).toFixed(1))));
+      state.channels[idx].planMix = nextVal;
+      state.channels.forEach(c => {
+        c.planSales = (state.planTotalSales * c.planMix) / 100;
+      });
+      renderChannelCards();
+      recalculateAndRender();
+      showToast(`残差を調整し、「${state.channels[idx].name}」を ${fmtNum(nextVal, 1)}% に設定しました`);
+    }
+
+    function applyScenario(type) {
+      const baseTotal = state.channels.reduce((s, c) => s + c.baseSales, 0);
+
+      state.channels.forEach(c => {
+        c.planSales = c.baseSales;
+        c.planMix = baseTotal > 0 ? parseFloat(((c.baseSales / baseTotal) * 100).toFixed(1)) : 0;
+        c.planMarginRate = c.baseMarginRate;
+        c.priceChangePct = 0;
+        c.materialDiffPt = 0;
+        c.promoDiffPt = 0;
+      });
+    function applyScenario(type, keepBanner = false) {
+      const baseTotal = state.channels.reduce((s, c) => s + c.baseSales, 0);
+
+      state.channels.forEach(c => {
+        c.planSales = c.baseSales;
+        c.planMix = baseTotal > 0 ? parseFloat(((c.baseSales / baseTotal) * 100).toFixed(1)) : 0;
+        c.planMarginRate = c.baseMarginRate;
+        c.priceChangePct = 0;
+        c.materialDiffPt = 0;
+        c.promoDiffPt = 0;
+      });
+      state.planTotalSales = baseTotal;
+
+      if (type === 'reset') {
+        if (!keepBanner) dismissStepBanner();
+        showToast('基準期（前期実績）の数値にリセットしました');
+      } else if (type === 'step1') {
+        launchLearningStep('step1');
+        return;
+      } else if (type === 'step2_pure_mix') {
+        launchLearningStep('step2a');
+        return;
+      } else if (type === 'step3_synergy') {
+        launchLearningStep('step3');
+        return;
+      } else if (type === 'inflation') {
+        state.channels.forEach((c, idx) => {
+          c.showDrivers = true;
+          if (idx === 0) {
+            c.priceChangePct = 2.0;
+            c.materialDiffPt = 3.5;
+            c.promoDiffPt = 0.5;
+          } else if (idx === 1) {
+            c.priceChangePct = 4.5;
+            c.materialDiffPt = 3.0;
+          } else {
+            c.priceChangePct = 6.0;
+            c.materialDiffPt = 2.5;
+            c.promoDiffPt = -0.5;
+          }
+          recalcChannelMarginFromDrivers(c);
+        });
+        syncMixFromSales();
+        showToast('「原材料高騰＆値上げ対応」シナリオを適用しました');
+      }
+
+      if (state.inputMode === 'mix') {
+        document.getElementById('planTotalSalesInput').value = Math.round(state.planTotalSales);
+        document.getElementById('baseTotalHint').textContent = fmtNum(baseTotal, 0);
+      }
+
+      renderChannelCards();
+      recalculateAndRender();
+    }
+
+    function syncMixFromSales() {
+      const total = state.channels.reduce((s, c) => s + c.planSales, 0);
+      state.planTotalSales = total;
+      state.channels.forEach(c => {
+        c.planMix = total > 0 ? parseFloat(((c.planSales / total) * 100).toFixed(1)) : 0;
+      });
+    }
+
+    // ==========================================
+    // 6. チャネルカードUIの描画と操作ハンドラ
+    // ==========================================
+    function renderChannelCards() {
+      const container = document.getElementById('channelCardsContainer');
+      const baseTotal = state.channels.reduce((s, c) => s + c.baseSales, 0);
+      const planTotal = state.channels.reduce((s, c) => s + c.planSales, 0);
+      const rawMixSum = state.channels.reduce((s, c) => s + c.planMix, 0);
+      const mixRemainder = parseFloat((100 - rawMixSum).toFixed(1));
+
+      container.innerHTML = state.channels.map((ch, idx) => {
+        const baseMix = baseTotal > 0 ? (ch.baseSales / baseTotal) * 100 : 0;
+        const currentMix = state.inputMode === 'mix'
+          ? ch.planMix
+          : (planTotal > 0 ? (ch.planSales / planTotal) * 100 : 0);
+        const mixDiff = currentMix - baseMix;
+        const rateDiff = ch.planMarginRate - ch.baseMarginRate;
+
+        const mixDiffBadge = mixDiff > 0.05
+          ? `<span class="text-emerald-600 font-bold">+${fmtNum(mixDiff, 1)}pt</span>`
+          : mixDiff < -0.05
+            ? `<span class="text-rose-600 font-bold">${fmtNum(mixDiff, 1)}pt</span>`
+            : `<span class="text-slate-400">±0.0pt</span>`;
+
+        const rateDiffBadge = rateDiff > 0.05
+          ? `<span class="text-emerald-600 font-bold">+${fmtNum(rateDiff, 1)}pt</span>`
+          : rateDiff < -0.05
+            ? `<span class="text-rose-600 font-bold">${fmtNum(rateDiff, 1)}pt</span>`
+            : `<span class="text-slate-400">±0.0pt</span>`;
+
+        const absorbBtnHtml = (state.inputMode === 'mix' && !state.autoBalanceMix && Math.abs(mixRemainder) >= 0.1)
+          ? `<button onclick="absorbRemainderToChannel(${idx})" class="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-100 hover:bg-indigo-200 text-indigo-800 transition">
+              残差(${mixRemainder > 0 ? '+' : ''}${fmtNum(mixRemainder, 1)}%)をここに吸収
+            </button>`
+          : '';
+
+        const salesOrMixControl = state.inputMode === 'amount'
+          ? `
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-600 font-medium">計画売上高 <span class="text-slate-400">(基準: ${fmtNum(ch.baseSales, 0)})</span></span>
+                <span class="text-slate-500 tabular-nums">構成比: <strong>${fmtNum(currentMix, 1)}%</strong> (${mixDiffBadge})</span>
+              </div>
+              <div class="flex items-center gap-2.5">
+                <input type="range" min="0" max="${Math.max(2000, ch.baseSales * 2.5)}" step="10" value="${ch.planSales}"
+                  oninput="handleSalesChange(${idx}, this.value)" class="flex-1">
+                <div class="flex items-center bg-slate-50 border border-slate-300 rounded px-2 py-0.5">
+                  <input type="number" step="10" min="0" value="${Math.round(ch.planSales)}"
+                    onchange="handleSalesChange(${idx}, this.value)"
+                    class="w-16 text-right text-xs font-bold text-slate-900 bg-transparent focus:outline-none tabular-nums">
+                  <span class="text-[10px] text-slate-400 ml-1">百万</span>
+                </div>
+              </div>
+              <div class="text-right text-[11px] text-slate-500 tabular-nums">
+                表示額: <strong class="text-slate-700">${fmtNum(ch.planSales, 1)} 百万円</strong>
+              </div>
+            </div>
+          `
+          : `
+            <div class="space-y-1.5 bg-indigo-50/40 p-2.5 rounded-lg border border-indigo-100">
+              <div class="flex flex-wrap items-center justify-between gap-1 text-xs">
+                <span class="text-indigo-800 font-bold">計画構成比 (%) <span class="text-slate-400 font-normal">(基準: ${fmtNum(baseMix, 1)}%)</span></span>
+                <span class="text-slate-700 tabular-nums">自動算出売上: <strong class="text-slate-900">${fmtNum(ch.planSales, 1)}</strong> 百万円 (${mixDiffBadge})</span>
+              </div>
+              <div class="flex items-center gap-2.5">
+                <input type="range" min="0" max="100" step="0.5" value="${ch.planMix}"
+                  oninput="handleMixInput(${idx}, this.value)" class="flex-1 accent-indigo">
+                <div class="flex items-center bg-white border-2 border-indigo-300 rounded-lg px-2 py-1 shadow-2xs">
+                  <input type="number" step="0.5" min="0" max="100" value="${ch.planMix}"
+                    onchange="handleMixInput(${idx}, this.value)"
+                    class="w-16 text-right text-sm font-bold text-indigo-900 bg-transparent focus:outline-none tabular-nums">
+                  <span class="text-xs font-bold text-indigo-500 ml-1">%</span>
+                </div>
+              </div>
+              ${absorbBtnHtml ? `<div class="flex justify-end pt-0.5">${absorbBtnHtml}</div>` : ''}
+            </div>
+          `;
+
+        return `
+          <div class="border border-slate-200 rounded-xl p-3.5 bg-white hover:border-slate-300 transition shadow-2xs">
+            <div class="flex items-center justify-between mb-2.5">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full inline-block" style="background-color: ${ch.color}"></span>
+                <span class="font-bold text-sm text-slate-900">${ch.name}</span>
+              </div>
+              <button onclick="toggleDrivers(${idx})" class="text-[11px] font-semibold px-2 py-0.5 rounded border ${ch.showDrivers ? 'bg-amber-50 border-amber-300 text-amber-800' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'} transition">
+                ${ch.showDrivers ? '▲ 要因分解を閉じる' : '▼ 単価・原価ドリルダウン'}
+              </button>
+            </div>
+
+            ${salesOrMixControl}
+
+            <!-- チャネル内 貢献利益率コントロール -->
+            <div class="mt-3 pt-2.5 border-t border-slate-100 space-y-1">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-600 font-medium">チャネル内 貢献利益率 <span class="text-slate-400">(基準: ${fmtNum(ch.baseMarginRate, 1)}%)</span></span>
+                <span class="tabular-nums">${rateDiffBadge}</span>
+              </div>
+              <div class="flex items-center gap-2.5">
+                <input type="range" min="0" max="90" step="0.5" value="${ch.planMarginRate}"
+                  oninput="handleMarginRateChange(${idx}, this.value)" class="flex-1 accent-emerald">
+                <div class="flex items-center bg-slate-50 border border-slate-300 rounded px-2 py-0.5">
+                  <input type="number" step="0.5" min="0" max="95" value="${ch.planMarginRate.toFixed(1)}"
+                    onchange="handleMarginRateChange(${idx}, this.value)"
+                    class="w-14 text-right text-xs font-bold text-emerald-700 bg-transparent focus:outline-none tabular-nums">
+                  <span class="text-[10px] text-slate-400 ml-1">%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ドリルダウン：単価・原材料・販促費ドライバー -->
+            <div class="${ch.showDrivers ? 'block' : 'hidden'} mt-3 pt-2.5 border-t border-dashed border-amber-200 bg-amber-50/40 rounded-lg p-2.5 space-y-2 text-xs">
+              <div class="font-semibold text-amber-900 flex items-center justify-between">
+                <span>利益率変動ドライバー（基準期比）</span>
+                <span class="text-[10px] text-amber-700">自動計算反映</span>
+              </div>
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-600 mb-0.5">単価改定率(%)</label>
+                  <input type="number" step="0.5" value="${ch.priceChangePct}"
+                    onchange="handleDriverChange(${idx}, 'priceChangePct', this.value)"
+                    class="w-full px-1.5 py-1 bg-white border border-slate-300 rounded text-right font-semibold tabular-nums">
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-600 mb-0.5">原価率変化(pt)</label>
+                  <input type="number" step="0.5" value="${ch.materialDiffPt}"
+                    onchange="handleDriverChange(${idx}, 'materialDiffPt', this.value)"
+                    class="w-full px-1.5 py-1 bg-white border border-slate-300 rounded text-right font-semibold tabular-nums">
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-600 mb-0.5">販促/物流率(pt)</label>
+                  <input type="number" step="0.5" value="${ch.promoDiffPt}"
+                    onchange="handleDriverChange(${idx}, 'promoDiffPt', this.value)"
+                    class="w-full px-1.5 py-1 bg-white border border-slate-300 rounded text-right font-semibold tabular-nums">
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function handleSalesChange(idx, val) {
+      const num = Math.max(0, parseFloat(val) || 0);
+      state.channels[idx].planSales = num;
+      syncMixFromSales();
+      renderChannelCards();
+      recalculateAndRender();
+    }
+
+    function handleMixInput(idx, val) {
+      let newMix = Math.max(0, Math.min(100, parseFloat(val) || 0));
+      const oldMix = state.channels[idx].planMix;
+      state.channels[idx].planMix = newMix;
+
+      if (state.autoBalanceMix && state.channels.length > 1) {
+        const remainingOld = 100 - oldMix;
+        const remainingNew = 100 - newMix;
+
+        if (remainingOld > 0.0001) {
+          state.channels.forEach((c, i) => {
+            if (i !== idx) {
+              c.planMix = parseFloat(((c.planMix / remainingOld) * remainingNew).toFixed(1));
+            }
+          });
+        } else {
+          const equalShare = parseFloat((remainingNew / (state.channels.length - 1)).toFixed(1));
+          state.channels.forEach((c, i) => {
+            if (i !== idx) c.planMix = equalShare;
+          });
+        }
+      }
+
+      state.channels.forEach(c => {
+        c.planSales = (state.planTotalSales * c.planMix) / 100;
+      });
+
+      renderChannelCards();
+      recalculateAndRender();
+    }
+
+    function handleMarginRateChange(idx, val) {
+      const num = Math.max(0, Math.min(95, parseFloat(val) || 0));
+      state.channels[idx].planMarginRate = num;
+      state.channels[idx].priceChangePct = 0;
+      state.channels[idx].materialDiffPt = 0;
+      state.channels[idx].promoDiffPt = 0;
+      renderChannelCards();
+      recalculateAndRender();
+    }
+
+    function toggleDrivers(idx) {
+      state.channels[idx].showDrivers = !state.channels[idx].showDrivers;
+      renderChannelCards();
+    }
+
+    function handleDriverChange(idx, field, val) {
+      state.channels[idx][field] = parseFloat(val) || 0;
+      recalcChannelMarginFromDrivers(state.channels[idx]);
+      renderChannelCards();
+      recalculateAndRender();
+    }
+
+    function recalcChannelMarginFromDrivers(ch) {
+      const v0 = 1 - (ch.baseMarginRate / 100);
+      const pFactor = 1 + (ch.priceChangePct / 100);
+      const newVarRatio = (v0 / Math.max(0.1, pFactor)) + (ch.materialDiffPt / 100) + (ch.promoDiffPt / 100);
+      const newMargin = (1 - newVarRatio) * 100;
+      ch.planMarginRate = Math.max(0, Math.min(95, parseFloat(newMargin.toFixed(2))));
+    }
+
+    // ==========================================
+    // 7. 管理会計 4要素厳密差異分解エンジン
+    // ==========================================
+    function calculateAnalytics() {
+      const S0 = state.channels.reduce((sum, c) => sum + c.baseSales, 0);
+      const S1 = state.channels.reduce((sum, c) => sum + c.planSales, 0);
+
+      let M0 = 0;
+      let M1 = 0;
+
+      state.channels.forEach(c => {
+        M0 += c.baseSales * (c.baseMarginRate / 100);
+        M1 += c.planSales * (c.planMarginRate / 100);
+      });
+
+      const mBar0 = S0 > 0 ? M0 / S0 : 0;
+      const mBar1 = S1 > 0 ? M1 / S1 : 0;
+
+      // 1. 売上規模効果: (S1 - S0) * mBar0
+      const volumeEffect = (S1 - S0) * mBar0;
+
+      let mixEffectTotal = 0;
+      let rateEffectTotal = 0;
+      let crossEffectTotal = 0;
+
+      const channelDetails = state.channels.map(c => {
+        const w0 = S0 > 0 ? c.baseSales / S0 : 0;
+        const w1 = S1 > 0 ? c.planSales / S1 : 0;
+        const m0 = c.baseMarginRate / 100;
+        const m1 = c.planMarginRate / 100;
+
+        const profit0 = c.baseSales * m0;
+        const profit1 = c.planSales * m1;
+        const profitDiff = profit1 - profit0;
+
+        const chMixEffect = S1 * (w1 - w0) * (m0 - mBar0);
+        const chRateEffect = S1 * w0 * (m1 - m0);
+        const chCrossEffect = S1 * (w1 - w0) * (m1 - m0);
+
+        mixEffectTotal += chMixEffect;
+        rateEffectTotal += chRateEffect;
+        crossEffectTotal += chCrossEffect;
+
+        return {
+          ...c,
+          w0Pct: w0 * 100,
+          w1Pct: w1 * 100,
+          profit0,
+          profit1,
+          profitDiff,
+          chMixEffect,
+          chRateEffect,
+          chCrossEffect
+        };
+      });
+
+      const totalRateDiffPt = (mBar1 - mBar0) * 100;
+      const mixRateDiffPt = S1 > 0 ? (mixEffectTotal / S1) * 100 : 0;
+      const rateRateDiffPt = S1 > 0 ? (rateEffectTotal / S1) * 100 : 0;
+      const crossRateDiffPt = S1 > 0 ? (crossEffectTotal / S1) * 100 : 0;
+
+      return {
+        S0, S1,
+        M0, M1,
+        mBar0Pct: mBar0 * 100,
+        mBar1Pct: mBar1 * 100,
+        profitDiff: M1 - M0,
+        volumeEffect,
+        mixEffectTotal,
+        rateEffectTotal,
+        crossEffectTotal,
+        totalRateDiffPt,
+        mixRateDiffPt,
+        rateRateDiffPt,
+        crossRateDiffPt,
+        channelDetails
+      };
+    }
+
+    // ==========================================
+    // 8. UI全体の再描画（すべてカンマ区切り）
+    // ==========================================
+    function recalculateAndRender() {
+      const res = calculateAnalytics();
+
+      // 構成比合計バッジ更新
+      const rawMixSum = state.inputMode === 'mix'
+        ? state.channels.reduce((s, c) => s + c.planMix, 0)
+        : res.channelDetails.reduce((s, c) => s + c.w1Pct, 0);
+      const diffFrom100 = parseFloat((100 - rawMixSum).toFixed(1));
+
+      const badge = document.getElementById('mixTotalBadge');
+      const modeBBadge = document.getElementById('mixModeStatusBadge');
+
+      if (Math.abs(diffFrom100) < 0.05) {
+        badge.textContent = `構成比合計: 100.0%`;
+        badge.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 tabular-nums';
+        if (modeBBadge) {
+          modeBBadge.textContent = `構成比合計: 100.0%（OK）`;
+          modeBBadge.className = 'text-xs font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 tabular-nums';
+        }
+      } else {
+        const signStr = diffFrom100 > 0 ? `残り +${fmtNum(diffFrom100, 1)}%` : `超過 ${fmtNum(diffFrom100, 1)}%`;
+        badge.textContent = `構成比合計: ${fmtNum(rawMixSum, 1)}% (${signStr})`;
+        badge.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300 tabular-nums';
+        if (modeBBadge) {
+          modeBBadge.textContent = `構成比合計: ${fmtNum(rawMixSum, 1)}%（${signStr}）`;
+          modeBBadge.className = 'text-xs font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 tabular-nums';
+        }
+      }
+
+      // KPIカード更新（カンマ区切り徹底）
+      document.getElementById('kpiBaseSales').textContent = fmtNum(res.S0, 0);
+      document.getElementById('kpiPlanSales').textContent = fmtNum(res.S1, 1);
+      const salesDiff = res.S1 - res.S0;
+      const salesPct = res.S0 > 0 ? (salesDiff / res.S0) * 100 : 0;
+      setDiffText('kpiSalesDiff', salesDiff, '百万円', `(${fmtSign(salesPct, 1)}%)`);
+
+      document.getElementById('kpiBaseMarginRate').textContent = `${fmtNum(res.mBar0Pct, 2)}%`;
+      document.getElementById('kpiPlanMarginRate').textContent = fmtNum(res.mBar1Pct, 2);
+      setDiffText('kpiMarginRateDiff', res.totalRateDiffPt, 'pt', '', 2);
+
+      document.getElementById('kpiBaseProfit').textContent = fmtNum(res.M0, 1);
+      document.getElementById('kpiPlanProfit').textContent = fmtNum(res.M1, 1);
+      const profitPct = res.M0 > 0 ? (res.profitDiff / res.M0) * 100 : 0;
+      setDiffText('kpiProfitDiff', res.profitDiff, '百万円', `(${fmtSign(profitPct, 1)}%)`);
+
+      // 最大ドライバー表示
+      const drivers = [
+        { name: '① 売上規模効果', val: res.volumeEffect },
+        { name: '② 構成比効果 (Mix)', val: res.mixEffectTotal },
+        { name: '③ 利益率効果 (Rate)', val: res.rateEffectTotal },
+        { name: '④ 交差・相乗効果', val: res.crossEffectTotal }
+      ].sort((a, b) => Math.abs(b.val) - Math.abs(a.val));
+
+      const topDriver = drivers[0];
+      const topNameEl = document.getElementById('kpiTopDriverName');
+      const topValEl = document.getElementById('kpiTopDriverVal');
+      if (Math.abs(topDriver.val) < 0.05) {
+        topNameEl.textContent = '基準期と同一';
+        topNameEl.className = 'mt-2 text-lg font-extrabold text-slate-700 truncate';
+        topValEl.textContent = 'パラメータを変更して検証';
+        topValEl.className = 'mt-1.5 text-xs font-semibold tabular-nums text-slate-500';
+      } else {
+        topNameEl.textContent = topDriver.name;
+        topNameEl.className = `mt-2 text-lg font-extrabold truncate ${topDriver.val >= 0 ? 'text-emerald-700' : 'text-rose-700'}`;
+        topValEl.textContent = `寄与額: ${fmtSign(topDriver.val, 1)} 百万円`;
+        topValEl.className = `mt-1.5 text-xs font-bold tabular-nums ${topDriver.val >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+      }
+
+      // 4要素サマリーピル更新
+      setBridgePill('bridgeVolumeVal', res.volumeEffect);
+      setBridgePill('bridgeMixVal', res.mixEffectTotal);
+      setBridgePill('bridgeRateVal', res.rateEffectTotal);
+      setBridgePill('bridgeCrossVal', res.crossEffectTotal);
+
+      // 利益率(%)分解バー更新
+      setRateBridgeItem('rateBridgeMix', 'barMixPct', res.mixRateDiffPt);
+      setRateBridgeItem('rateBridgeRate', 'barRatePct', res.rateRateDiffPt);
+      setRateBridgeItem('rateBridgeCross', 'barCrossPct', res.crossRateDiffPt);
+      const totalRateEl = document.getElementById('rateBridgeTotal');
+      totalRateEl.textContent = `${fmtSign(res.totalRateDiffPt, 2)} pt`;
+      totalRateEl.className = `text-base font-bold tabular-nums ${res.totalRateDiffPt > 0.005 ? 'text-emerald-600' : res.totalRateDiffPt < -0.005 ? 'text-rose-600' : 'text-slate-900'}`;
+
+      if (waterfallChartInstance && channelBarChartInstance) {
+        updateCharts(res);
+      }
+      renderDetailTable(res);
+      renderInsight(res);
+    }
+
+    function setDiffText(elId, diff, unit, suffix = '', decimals = 1) {
+      const el = document.getElementById(elId);
+      el.textContent = `${fmtSign(diff, decimals)} ${unit} ${suffix}`.trim();
+      if (diff > 0.005) {
+        el.className = 'mt-1.5 text-xs font-bold tabular-nums text-emerald-600';
+      } else if (diff < -0.005) {
+        el.className = 'mt-1.5 text-xs font-bold tabular-nums text-rose-600';
+      } else {
+        el.className = 'mt-1.5 text-xs font-semibold tabular-nums text-slate-500';
+      }
+    }
+
+    function setBridgePill(elId, val) {
+      const el = document.getElementById(elId);
+      el.textContent = `${fmtSign(val, 1)} 百万円`;
+      if (val > 0.05) {
+        el.className = 'text-sm font-bold tabular-nums mt-0.5 text-emerald-600';
+      } else if (val < -0.05) {
+        el.className = 'text-sm font-bold tabular-nums mt-0.5 text-rose-600';
+      } else {
+        el.className = 'text-sm font-bold tabular-nums mt-0.5 text-slate-700';
+      }
+    }
+
+    function setRateBridgeItem(textId, barId, valPt) {
+      const textEl = document.getElementById(textId);
+      const barEl = document.getElementById(barId);
+      textEl.textContent = `${fmtSign(valPt, 2)} pt`;
+      textEl.className = `tabular-nums font-bold ${valPt > 0.005 ? 'text-emerald-600' : valPt < -0.005 ? 'text-rose-600' : 'text-slate-600'}`;
+
+      const widthPct = Math.min(100, (Math.abs(valPt) / 8) * 100);
+      barEl.style.width = `${widthPct}%`;
+      if (valPt < 0) {
+        barEl.classList.add('bg-rose-500');
+      } else {
+        barEl.classList.remove('bg-rose-500');
+      }
+    }
+
+    // ==========================================
+    // 9. Chart.js グラフ初期化＆更新（ツールチップ・軸もカンマ区切り）
+    // ==========================================
+    function initCharts() {
+      const wfCtx = document.getElementById('waterfallChart').getContext('2d');
+      waterfallChartInstance = new Chart(wfCtx, {
+        type: 'bar',
+        data: {
+          labels: ['基準期\n貢献利益', '①売上規模\n効果', '②構成比\n効果(Mix)', '③利益率\n効果(Rate)', '④交差\n相乗効果', '計画期\n貢献利益'],
+          datasets: [{
+            label: '貢献利益ブリッジ (百万円)',
+            data: [],
+            backgroundColor: [],
+            borderRadius: 6,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const idx = ctx.dataIndex;
+                  const raw = ctx.raw;
+                  if (idx === 0 || idx === 5) {
+                    return `合計: ${fmtNum(raw[1], 1)} 百万円`;
+                  }
+                  const delta = ctx.dataset.deltas[idx];
+                  return `増減影響: ${fmtSign(delta, 1)} 百万円`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: '#e2e8f0' },
+              ticks: {
+                font: { size: 11 },
+                callback: (value) => fmtNum(value, 0)
+              }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { font: { size: 11, weight: '600' } }
+            }
+          }
+        }
+      });
+
+      const barCtx = document.getElementById('channelBarChart').getContext('2d');
+      channelBarChartInstance = new Chart(barCtx, {
+        type: 'bar',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: '基準期',
+              data: [],
+              backgroundColor: '#cbd5e1',
+              borderRadius: 4
+            },
+            {
+              label: '計画期',
+              data: [],
+              backgroundColor: '#4f46e5',
+              borderRadius: 4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: { boxWidth: 10, font: { size: 11 } }
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.dataset.label}: ${fmtNum(ctx.parsed.y, 1)} 百万円`
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: '#f1f5f9' },
+              ticks: {
+                font: { size: 10 },
+                callback: (value) => fmtNum(value, 0)
+              }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { font: { size: 10 } }
+            }
+          }
+        }
+      });
+    }
+
+    function updateCharts(res) {
+      const s0 = res.M0;
+      const s1 = s0 + res.volumeEffect;
+      const s2 = s1 + res.mixEffectTotal;
+      const s3 = s2 + res.rateEffectTotal;
+      const s4 = s3 + res.crossEffectTotal;
+
+      const floatingBars = [
+        [0, s0],
+        [Math.min(s0, s1), Math.max(s0, s1)],
+        [Math.min(s1, s2), Math.max(s1, s2)],
+        [Math.min(s2, s3), Math.max(s2, s3)],
+        [Math.min(s3, s4), Math.max(s3, s4)],
+        [0, res.M1]
+      ];
+
+      const deltas = [s0, res.volumeEffect, res.mixEffectTotal, res.rateEffectTotal, res.crossEffectTotal, res.M1];
+      const colors = [
+        '#475569',
+        res.volumeEffect >= 0 ? '#10b981' : '#f43f5e',
+        res.mixEffectTotal >= 0 ? '#10b981' : '#f43f5e',
+        res.rateEffectTotal >= 0 ? '#10b981' : '#f43f5e',
+        res.crossEffectTotal >= 0 ? '#10b981' : '#f43f5e',
+        '#1e3a8a'
+      ];
+
+      waterfallChartInstance.data.datasets[0].data = floatingBars;
+      waterfallChartInstance.data.datasets[0].deltas = deltas;
+      waterfallChartInstance.data.datasets[0].backgroundColor = colors;
+      waterfallChartInstance.update();
+
+      channelBarChartInstance.data.labels = res.channelDetails.map(c => c.name.split('（')[0].split('・')[0]);
+      channelBarChartInstance.data.datasets[0].data = res.channelDetails.map(c => Number(c.profit0.toFixed(1)));
+      channelBarChartInstance.data.datasets[1].data = res.channelDetails.map(c => Number(c.profit1.toFixed(1)));
+      channelBarChartInstance.update();
+    }
+
+    // ==========================================
+    // 10. 詳細マトリクス表＆AIインサイト生成
+    // ==========================================
+    function renderDetailTable(res) {
+      const tbody = document.getElementById('detailTableBody');
+      const tfoot = document.getElementById('detailTableFoot');
+
+      tbody.innerHTML = res.channelDetails.map(c => {
+        return `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="py-2.5 px-3 font-semibold text-slate-900 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full shrink-0" style="background-color:${c.color}"></span>
+              <span>${c.name}</span>
+            </td>
+            <td class="py-2.5 px-3 text-right text-slate-600">
+              ${fmtNum(c.baseSales, 1)}<br><span class="text-[10px] text-slate-400">(${fmtNum(c.w0Pct, 1)}%)</span>
+            </td>
+            <td class="py-2.5 px-3 text-right font-semibold text-slate-900">
+              ${fmtNum(c.planSales, 1)}<br><span class="text-[10px] text-indigo-600">(${fmtNum(c.w1Pct, 1)}%)</span>
+            </td>
+            <td class="py-2.5 px-3 text-right">
+              <span class="text-slate-500">${fmtNum(c.baseMarginRate, 1)}%</span> → <strong class="text-slate-900">${fmtNum(c.planMarginRate, 1)}%</strong>
+            </td>
+            <td class="py-2.5 px-3 text-right font-bold ${c.profitDiff > 0.05 ? 'text-emerald-600' : c.profitDiff < -0.05 ? 'text-rose-600' : 'text-slate-600'}">
+              ${fmtSign(c.profitDiff, 1)}
+            </td>
+            <td class="py-2.5 px-3 text-right ${c.chMixEffect > 0.05 ? 'text-emerald-600' : c.chMixEffect < -0.05 ? 'text-rose-600' : 'text-slate-500'}">
+              ${fmtSign(c.chMixEffect, 1)}
+            </td>
+            <td class="py-2.5 px-3 text-right ${c.chRateEffect > 0.05 ? 'text-emerald-600' : c.chRateEffect < -0.05 ? 'text-rose-600' : 'text-slate-500'}">
+              ${fmtSign(c.chRateEffect, 1)}
+            </td>
+            <td class="py-2.5 px-3 text-right ${c.chCrossEffect > 0.05 ? 'text-emerald-600' : c.chCrossEffect < -0.05 ? 'text-rose-600' : 'text-slate-500'}">
+              ${fmtSign(c.chCrossEffect, 1)}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      tfoot.innerHTML = `
+        <tr>
+          <td class="py-2.5 px-3">全社合計</td>
+          <td class="py-2.5 px-3 text-right">${fmtNum(res.S0, 1)}<br><span class="text-[10px] font-normal">(100.0%)</span></td>
+          <td class="py-2.5 px-3 text-right">${fmtNum(res.S1, 1)}<br><span class="text-[10px] font-normal">(100.0%)</span></td>
+          <td class="py-2.5 px-3 text-right">${fmtNum(res.mBar0Pct, 2)}% → ${fmtNum(res.mBar1Pct, 2)}%</td>
+          <td class="py-2.5 px-3 text-right ${res.profitDiff >= 0 ? 'text-emerald-700' : 'text-rose-700'}">${fmtSign(res.profitDiff, 1)}</td>
+          <td class="py-2.5 px-3 text-right text-indigo-800">${fmtSign(res.mixEffectTotal, 1)}</td>
+          <td class="py-2.5 px-3 text-right text-amber-800">${fmtSign(res.rateEffectTotal, 1)}</td>
+          <td class="py-2.5 px-3 text-right text-purple-800">${fmtSign(res.crossEffectTotal, 1)}</td>
+        </tr>
+      `;
+    }
+
+    function renderInsight(res) {
+      const container = document.getElementById('aiInsightContent');
+      const diff = res.profitDiff;
+
+      if (Math.abs(diff) < 0.1 && Math.abs(res.mixEffectTotal) < 0.1 && Math.abs(res.rateEffectTotal) < 0.1) {
+        container.innerHTML = `<p>現在は基準期（前期実績）と同一の利益構造です。左側のスライダーまたは上部の学習シナリオを選択すると、売上規模・構成比・チャネル内利益率の変化がリアルタイムに要因分解されます。</p>`;
+        return;
+      }
+
+      const insights = [];
+
+      if (diff > 0) {
+        insights.push(`<p>✅ <strong>総合評価：</strong>貢献利益は基準期比 <span class="text-emerald-300 font-bold">+${fmtNum(diff, 1)} 百万円</span> 増加し、<span class="text-emerald-300 font-bold">${fmtNum(res.M1, 1)} 百万円</span>（全社貢献利益率 ${fmtNum(res.mBar1Pct, 2)}%）となりました。</p>`);
+      } else {
+        insights.push(`<p>⚠️ <strong>総合評価：</strong>貢献利益は基準期比 <span class="text-rose-300 font-bold">${fmtNum(diff, 1)} 百万円</span> 減少し、<span class="text-rose-300 font-bold">${fmtNum(res.M1, 1)} 百万円</span>（全社貢献利益率 ${fmtNum(res.mBar1Pct, 2)}%）となっています。</p>`);
+      }
+
+      const absMix = Math.abs(res.mixEffectTotal);
+      const absRate = Math.abs(res.rateEffectTotal);
+      if (absMix > absRate && absMix > 0.5) {
+        const dir = res.mixEffectTotal > 0 ? '高利益率チャネル（EC・ギフト等）へのポートフォリオ転換' : '低利益率チャネル（量販店等）への売上偏重';
+        insights.push(`<p>📊 <strong>構造要因（Mix主導）：</strong>利益率変動の最大ドライバーは<strong>チャネル構成比の変化（${fmtSign(res.mixEffectTotal, 1)} 百万円 / ${fmtSign(res.mixRateDiffPt, 2)} pt）</strong>です。${dir}が全社採算を大きく動かしています。</p>`);
+      } else if (absRate >= absMix && absRate > 0.5) {
+        const dir = res.rateEffectTotal > 0 ? '各チャネル内での単価改定・原価低減・販促費見直しの成功' : '原材料高騰や値引き・販促費増によるチャネル内マージンの圧縮';
+        insights.push(`<p>⚙️ <strong>オペレーション要因（Rate主導）：</strong>利益率変動の最大ドライバーは<strong>チャネル内貢献利益率の変化（${fmtSign(res.rateEffectTotal, 1)} 百万円 / ${fmtSign(res.rateRateDiffPt, 2)} pt）</strong>です。${dir}が収益に直結しています。</p>`);
+      }
+
+      if (res.crossEffectTotal > 0.5) {
+        insights.push(`<p>✨ <strong>複合シナジー発現：</strong>交差・相乗効果が <span class="text-purple-300 font-bold">+${fmtNum(res.crossEffectTotal, 1)} 百万円</span> 発生しています。「構成比を伸ばした成長チャネル」において「利益率の改善」も同時に達成できている理想的な拡張パターンです。</p>`);
+      } else if (res.crossEffectTotal < -0.5) {
+        insights.push(`<p>⚡ <strong>逆シナジー警告：</strong>交差効果が <span class="text-rose-300 font-bold">${fmtNum(res.crossEffectTotal, 1)} 百万円</span> のマイナスとなっています。「売上構成比を拡大したチャネルの利益率が低下している」または「高収益チャネルのシェアを落としている」ため、拡販と採算管理のバランス見直しが推奨されます。</p>`);
+      }
+
+      container.innerHTML = insights.join('');
+    }
+
+    // ==========================================
+    // 11. 基準期設定モーダル & CSV出力
+    // ==========================================
+    const PALETTE = ['#3b82f6', '#10b981', '#6366f1', '#f59e0b', '#ec4899', '#14b8a6'];
+
+    function openBaseModal() {
+      renderModalChannels();
+      document.getElementById('baseSettingsModal').classList.remove('hidden');
+    }
+
+    function closeBaseModal() {
+      document.getElementById('baseSettingsModal').classList.add('hidden');
+    }
+
+    function renderModalChannels() {
+      const list = document.getElementById('modalChannelsList');
+      list.innerHTML = state.channels.map((c) => `
+        <div class="grid grid-cols-12 gap-2 items-center bg-slate-50 p-2 rounded-lg border border-slate-200 modal-ch-row">
+          <div class="col-span-5">
+            <input type="text" value="${c.name}" class="modal-ch-name w-full px-2 py-1 text-xs font-semibold border border-slate-300 rounded bg-white">
+          </div>
+          <div class="col-span-3">
+            <div class="flex items-center bg-white border border-slate-300 rounded px-1.5 py-1">
+              <input type="number" value="${c.baseSales}" step="10" min="0" class="modal-ch-sales w-full text-right text-xs font-bold tabular-nums focus:outline-none">
+              <span class="text-[10px] text-slate-400 ml-1">百万</span>
+            </div>
+          </div>
+          <div class="col-span-3">
+            <div class="flex items-center bg-white border border-slate-300 rounded px-1.5 py-1">
+              <input type="number" value="${c.baseMarginRate}" step="0.5" min="0" max="95" class="modal-ch-rate w-full text-right text-xs font-bold tabular-nums focus:outline-none">
+              <span class="text-[10px] text-slate-400 ml-1">%</span>
+            </div>
+          </div>
+          <div class="col-span-1 text-center">
+            ${state.channels.length > 2 ? `<button onclick="removeModalRow(this)" class="text-rose-500 hover:text-rose-700 text-xs font-bold">✕</button>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function addChannelRowInModal() {
+      const list = document.getElementById('modalChannelsList');
+      const div = document.createElement('div');
+      div.className = 'grid grid-cols-12 gap-2 items-center bg-slate-50 p-2 rounded-lg border border-slate-200 modal-ch-row';
+      div.innerHTML = `
+        <div class="col-span-5">
+          <input type="text" value="新規チャネル" class="modal-ch-name w-full px-2 py-1 text-xs font-semibold border border-slate-300 rounded bg-white">
+        </div>
+        <div class="col-span-3">
+          <div class="flex items-center bg-white border border-slate-300 rounded px-1.5 py-1">
+            <input type="number" value="200" step="10" min="0" class="modal-ch-sales w-full text-right text-xs font-bold tabular-nums focus:outline-none">
+            <span class="text-[10px] text-slate-400 ml-1">百万</span>
+          </div>
+        </div>
+        <div class="col-span-3">
+          <div class="flex items-center bg-white border border-slate-300 rounded px-1.5 py-1">
+            <input type="number" value="25.0" step="0.5" min="0" max="95" class="modal-ch-rate w-full text-right text-xs font-bold tabular-nums focus:outline-none">
+            <span class="text-[10px] text-slate-400 ml-1">%</span>
+          </div>
+        </div>
+        <div class="col-span-1 text-center">
+          <button onclick="removeModalRow(this)" class="text-rose-500 hover:text-rose-700 text-xs font-bold">✕</button>
+        </div>
+      `;
+      list.appendChild(div);
+    }
+
+    function removeModalRow(btn) {
+      btn.closest('.modal-ch-row').remove();
+    }
+
+    function resetDefaultBaseData() {
+      state.channels = JSON.parse(JSON.stringify(DEFAULT_CHANNELS));
+      renderModalChannels();
+      showToast('初期データ（八王子食品モデル）をフォームに読み込みました');
+    }
+
+    function saveBaseSettings() {
+      const rows = document.querySelectorAll('.modal-ch-row');
+      if (rows.length < 2) {
+        showToast('最低2つのチャネルが必要です');
+        return;
+      }
+
+      const newChannels = [];
+      rows.forEach((row, idx) => {
+        const name = row.querySelector('.modal-ch-name').value.trim() || `チャネル${idx + 1}`;
+        const baseSales = Math.max(0, parseFloat(row.querySelector('.modal-ch-sales').value) || 0);
+        const baseMarginRate = Math.max(0, Math.min(95, parseFloat(row.querySelector('.modal-ch-rate').value) || 0));
+
+        newChannels.push({
+          id: `ch_${idx}_${Date.now()}`,
+          name,
+          hint: state.channels[idx]?.hint || '',
+          color: PALETTE[idx % PALETTE.length],
+          baseSales,
+          baseMarginRate,
+          planSales: baseSales,
+          planMix: 0,
+          planMarginRate: baseMarginRate,
+          priceChangePct: 0,
+          materialDiffPt: 0,
+          promoDiffPt: 0,
+          showDrivers: false
+        });
+      });
+
+      state.channels = newChannels;
+      syncMixFromSales();
+
+      if (state.inputMode === 'mix') {
+        document.getElementById('planTotalSalesInput').value = Math.round(state.planTotalSales);
+        document.getElementById('baseTotalHint').textContent = fmtNum(state.planTotalSales, 0);
+      }
+
+      closeBaseModal();
+      renderGuideBaseTable();
+      renderChannelCards();
+      recalculateAndRender();
+      showToast('基準期データを更新しました');
+    }
+
+    function exportCSV() {
+      const res = calculateAnalytics();
+      const rows = [
+        ['チャネル名', '基準売上(百万円)', '基準構成比(%)', '基準貢献利益率(%)', '基準貢献利益(百万円)', '計画売上(百万円)', '計画構成比(%)', '計画貢献利益率(%)', '計画貢献利益(百万円)', '貢献利益増減(百万円)', '構成比効果Mix(百万円)', '利益率効果Rate(百万円)', '交差効果Cross(百万円)'],
+        ...res.channelDetails.map(c => [
+          c.name,
+          c.baseSales.toFixed(2),
+          c.w0Pct.toFixed(2),
+          c.baseMarginRate.toFixed(2),
+          c.profit0.toFixed(2),
+          c.planSales.toFixed(2),
+          c.w1Pct.toFixed(2),
+          c.planMarginRate.toFixed(2),
+          c.profit1.toFixed(2),
+          c.profitDiff.toFixed(2),
+          c.chMixEffect.toFixed(2),
+          c.chRateEffect.toFixed(2),
+          c.chCrossEffect.toFixed(2)
+        ]),
+        [
+          '全社合計',
+          res.S0.toFixed(2),
+          '100.00',
+          res.mBar0Pct.toFixed(2),
+          res.M0.toFixed(2),
+          res.S1.toFixed(2),
+          '100.00',
+          res.mBar1Pct.toFixed(2),
+          res.M1.toFixed(2),
+          res.profitDiff.toFixed(2),
+          res.mixEffectTotal.toFixed(2),
+          res.rateEffectTotal.toFixed(2),
+          res.crossEffectTotal.toFixed(2)
+        ]
+      ];
+
+      const csvContent = '\uFEFF' + rows.map(r => r.join(',')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `hachioji_foods_simulation_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('CSVファイルをダウンロードしました');
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toastNotification');
+      document.getElementById('toastMessage').textContent = msg;
+      toast.classList.remove('hidden');
+      toast.classList.add('toast-enter');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
